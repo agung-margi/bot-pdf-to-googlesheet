@@ -53,7 +53,7 @@ It is suitable for reports such as:
 
 ```bash
 git clone https://github.com/username/pdf-bot.git](https://github.com/agung-margi/bot-pdf-to-googlesheet.git
-cd pdf-bot
+cd bot-pdf-to-googlesheet
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
