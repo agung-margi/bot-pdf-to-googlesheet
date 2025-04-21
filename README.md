@@ -1,24 +1,24 @@
 # 🤖 PDF Extractor Telegram Bot
 
-Bot Telegram ini memungkinkan kamu mengirim file PDF dan mendapatkan data terstruktur hasil ekstraksi langsung melalui chat Telegram.
+This Telegram bot allows you to send PDF files and receive structured extracted data directly through Telegram chat.
 
-Cocok untuk laporan seperti:
-- Laporan instalasi
-- Dokumen permintaan pelanggan
-- Formulir PDF lainnya
+It is suitable for reports such as:
+- Installation reports
+- Customer request documents
+- Other PDF forms
 
 ---
 
-## 📦 Fitur
+## 📦 Features
 
-- 📥 Terima file PDF dari Telegram
-- 🧾 Ekstrak data seperti:
+- 📥 Receive PDF files from Telegram
+- 🧾 Extract data such as:
   - STO
-  - No Permintaan
-  - Nama Pelanggan
+  - Request Number
+  - Customer Name
   - Material
-- 🔁 Kirim balik hasil parsing dalam format teks
-- 🚀 Siap dikembangkan untuk integrasi ke Google Sheets, database, dll
+- 🔁 Send back the parsed results in text format
+- 🚀 Ready to be extended for integration with Google Sheets, databases, etc.
 
 ---
 
