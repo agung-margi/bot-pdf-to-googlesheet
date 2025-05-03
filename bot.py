@@ -1,3 +1,5 @@
+
+
 # Ganti dengan token bot Telegram kamu
 TELEGRAM_BOT_TOKEN = ''
 # Ganti dengan URL Web App Google Apps Script kamu
@@ -24,7 +26,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     operation = context.user_data.get('operation', 'insert') 
-
     # Menyimpan file PDF yang dikirimkan
     file = await update.message.document.get_file()
     file_path = f"{file.file_unique_id}.pdf"
@@ -89,7 +90,6 @@ async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['operation'] = 'update'
     await update.message.reply_text("Silakan kirim file PDF untuk di-*update*.")
 
-
 # Fungsi untuk memproses data PDF
 def process_pdf_bytes(pdf_bytes):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -127,18 +127,26 @@ def process_pdf_bytes(pdf_bytes):
             data[key] = "-"
 
     # Ambil material
-    material_pattern = re.findall(r'([A-Za-z0-9\- ]+(?:\n[A-Za-z0-9\- ]+)*?)\s*:\s*(\d+)\s*Pcs', full_text)
+    material_pattern = re.findall(r'(?<!Material\s)([A-Za-z0-9\- ]+)\s*:\s*(\d+)\s*Pcs', full_text)
     materials = []
     for name, qty in material_pattern:
         clean_name = name.replace("\n", " ").strip()
-        if clean_name.startswith("- "):
-            clean_name = clean_name[2:].strip()
-        if clean_name.lower().startswith("material "):
-            clean_name = clean_name[9:].strip()
         materials.append({"Nama Material": clean_name, "Jumlah": qty})
+
+    # Koreksi nama material jika perlu
+    corrections = {
+        "LAMP-HOOK": "CLAMP-HOOK",
+        # Tambah koreksi lain di sini
+    }
+
+    for material in materials:
+        name = material["Nama Material"]
+        corrected = corrections.get(name.upper(), name)
+        material["Nama Material"] = corrected
 
     data["Materials"] = materials
 
+    # Ambil data layanan
     layanan_pattern = re.findall(r'☑\s*(.*)', full_text)
     data["Layanan"] = ", ".join(layanan_pattern) if layanan_pattern else "-"
 
