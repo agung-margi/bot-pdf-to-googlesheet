@@ -10,6 +10,7 @@ import fitz  # PyMuPDF
 import re
 import requests
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 
@@ -18,9 +19,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     "👋 *Halo! Saya BOT Report BA UT TA Bekasi.*\n\n"
     "📄 *Silakan kirim file PDF laporan instalasi untuk disimpan.*\n\n"
     "🔁 Untuk *memperbarui data* yang sudah ada, gunakan perintah:\n"
-    "`/update`\n\n"
+    "/update\n\n"
     "🔍 Untuk *melihat data* berdasarkan _No Permintaan_, gunakan:\n"
-    "`/cekdata <No Permintaan>`",
+    "/cekdata <No Permintaan>",
     parse_mode='Markdown'
 )
 
@@ -83,12 +84,17 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Fungsi untuk menangani perintah /insert
 async def insert_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['operation'] = 'insert'
-    await update.message.reply_text("Silakan kirim file PDF untuk di-insert.")
+    await update.message.reply_text("Silakan kirim file PDF untuk di-*insert*.",
+    parse_mode='Markdown'
+    )
 
 # Fungsi untuk menangani perintah /update
 async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['operation'] = 'update'
-    await update.message.reply_text("Silakan kirim file PDF untuk di-*update*.")
+    await update.message.reply_text(
+        "Silakan kirim file PDF untuk di-*update*.",
+        parse_mode='Markdown'
+    )
 
 # Fungsi untuk memproses data PDF
 def process_pdf_bytes(pdf_bytes):
