@@ -103,10 +103,11 @@ def process_pdf_bytes(pdf_bytes):
     for page in doc:
         full_text += page.get_text()
 
-    # Ekstrak data yang dibutuhkan
+    # Ekstrak No Permintaan
     no_permintaan_match = re.search(r'No Permintaan\s*:\s*((?:.*\n)+?)No Telepon', full_text)
     no_permintaan = no_permintaan_match.group(1).replace("\n", "").strip() if no_permintaan_match else "-"
 
+    # Data utama
     data = {
         "STO": re.search(r'STO\s*:\s*([^\n]+)', full_text),
         "No Permintaan": no_permintaan,
@@ -126,23 +127,24 @@ def process_pdf_bytes(pdf_bytes):
         "Nama Mitra": re.search(r'Nama Mitra\s*:\s*([^\n]+)', full_text),
     }
 
+    # Bersihkan hasil pencarian regex
     for key in data.keys():
         if data[key] is not None and key != "No Permintaan":
             data[key] = data[key].group(1).strip()
         elif key != "No Permintaan":
             data[key] = "-"
 
-    # Ambil material
-    material_pattern = re.findall(r'(?<!Material\s)([A-Za-z0-9\- ]+)\s*:\s*(\d+)\s*Pcs', full_text)
+    # Ekstrak material dengan satuan fleksibel
+    material_pattern = re.findall(r'([A-Za-z0-9\-]+)\s*:\s*(\d+)\s*(Meter|Pcs)', full_text)
     materials = []
-    for name, qty in material_pattern:
+    for name, qty, unit in material_pattern:
         clean_name = name.replace("\n", " ").strip()
         materials.append({"Nama Material": clean_name, "Jumlah": qty})
 
-    # Koreksi nama material jika perlu
+    # Koreksi nama material
     corrections = {
         "LAMP-HOOK": "CLAMP-HOOK",
-        # Tambah koreksi lain di sini
+        # Tambah koreksi lainnya di sini
     }
 
     for material in materials:
@@ -152,7 +154,7 @@ def process_pdf_bytes(pdf_bytes):
 
     data["Materials"] = materials
 
-    # Ambil data layanan
+    # Ambil layanan (checkbox)
     layanan_pattern = re.findall(r'☑\s*(.*)', full_text)
     data["Layanan"] = ", ".join(layanan_pattern) if layanan_pattern else "-"
 
@@ -163,12 +165,14 @@ def process_pdf_bytes(pdf_bytes):
     else:
         data["Speed"] = "-"
 
+    # Format layanan jika ada “+”
     data["Layanan"] = " / ".join([
         f"{seg.split()[0]} [{ ' '.join(seg.split()[1:]) }]" if "+" in seg else seg
         for seg in data["Layanan"].split(" / ")
     ])
 
     return data
+
 
 # Fungsi untuk mengirimkan data ke Database
 def send_to_gsheet(data, user, operation):
