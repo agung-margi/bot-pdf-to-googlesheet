@@ -1,10 +1,4 @@
-
-
-# Ganti dengan token bot Telegram kamu
-TELEGRAM_BOT_TOKEN = ''
-# Ganti dengan URL Web App Google Apps Script kamu
-GOOGLE_SCRIPT_URL = ''
-
+from dotenv import load_dotenv
 import os
 import fitz  # PyMuPDF
 import re
@@ -13,6 +7,14 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
+
+
+load_dotenv()  # Load dari .env ke environment variable
+
+# Ganti dengan token bot Telegram kamu
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+# Ganti dengan URL Web App Google Apps Script kamu
+GOOGLE_SCRIPT_URL = os.getenv("GOOGLE_SCRIPT_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -24,6 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     "/cekdata <No Permintaan>",
     parse_mode='Markdown'
 )
+
 
 async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     operation = context.user_data.get('operation', 'insert') 
@@ -103,11 +106,11 @@ def process_pdf_bytes(pdf_bytes):
     for page in doc:
         full_text += page.get_text()
 
-    # Ekstrak No Permintaan
+    # Ekstrak No Permintaan secara multiline
     no_permintaan_match = re.search(r'No Permintaan\s*:\s*((?:.*\n)+?)No Telepon', full_text)
     no_permintaan = no_permintaan_match.group(1).replace("\n", "").strip() if no_permintaan_match else "-"
 
-    # Data utama
+    # Ekstrak data utama
     data = {
         "STO": re.search(r'STO\s*:\s*([^\n]+)', full_text),
         "No Permintaan": no_permintaan,
@@ -127,37 +130,40 @@ def process_pdf_bytes(pdf_bytes):
         "Nama Mitra": re.search(r'Nama Mitra\s*:\s*([^\n]+)', full_text),
     }
 
-    # Bersihkan hasil pencarian regex
+    # Bersihkan hasil regex
     for key in data.keys():
         if data[key] is not None and key != "No Permintaan":
             data[key] = data[key].group(1).strip()
         elif key != "No Permintaan":
             data[key] = "-"
 
-    # Ekstrak material dengan satuan fleksibel
-    material_pattern = re.findall(r'([A-Za-z0-9\-]+)\s*:\s*(\d+)\s*(Meter|Pcs)', full_text)
+    # Regex untuk material dengan semua satuan umum
+    material_pattern = re.findall(r'([A-Za-z0-9\-\./]+)\s*:\s*(\d+)\s*(Pcs|Meter|Batang|Unit|Roll|Buah)', full_text, re.IGNORECASE)
     materials = []
     for name, qty, unit in material_pattern:
         clean_name = name.replace("\n", " ").strip()
-        materials.append({"Nama Material": clean_name, "Jumlah": qty})
+        materials.append({
+            "Nama Material": clean_name,
+            "Jumlah": qty,
+            "Satuan": unit
+        })
 
-    # Koreksi nama material
+    # Koreksi nama material jika typo
     corrections = {
         "LAMP-HOOK": "CLAMP-HOOK",
-        # Tambah koreksi lainnya di sini
+        # Tambah entri lain jika perlu
     }
 
     for material in materials:
         name = material["Nama Material"]
-        corrected = corrections.get(name.upper(), name)
-        material["Nama Material"] = corrected
+        material["Nama Material"] = corrections.get(name.upper(), name)
 
     data["Materials"] = materials
 
-    # Ambil layanan (checkbox)
+    # Ambil layanan aktif (dengan checkbox ☑)
     layanan_pattern = re.findall(r'☑\s*(.*)', full_text)
     data["Layanan"] = ", ".join(layanan_pattern) if layanan_pattern else "-"
-
+    
     layanan_parts = [part.strip() for part in data["Layanan"].split(",")]
     if len(layanan_parts) == 2:
         data["Layanan"] = layanan_parts[0]
@@ -165,7 +171,7 @@ def process_pdf_bytes(pdf_bytes):
     else:
         data["Speed"] = "-"
 
-    # Format layanan jika ada “+”
+    # Format layanan dengan “+” untuk jadi bentuk terstruktur
     data["Layanan"] = " / ".join([
         f"{seg.split()[0]} [{ ' '.join(seg.split()[1:]) }]" if "+" in seg else seg
         for seg in data["Layanan"].split(" / ")
